@@ -3668,14 +3668,26 @@
     "app.R": {
       "checksum": "95f4ca4bdf08a4dffb0e30b1aba3ac25"
     },
-    "exports/shiny_minimal.duckdb": {
-      "checksum": "377a27f120ad3fac98c8077d3cb09784"
+    "exports/database_parts/database_parts_manifest.csv": {
+      "checksum": "ce9e6b1f71e52d463a94a3152c621986"
+    },
+    "exports/database_parts/shiny_minimal.duckdb.part001": {
+      "checksum": "b48b2ac77e7421bb3dbc46af977ed0b3"
+    },
+    "exports/database_parts/shiny_minimal.duckdb.part002": {
+      "checksum": "876fa2279db6965e58ad78bdbff4363c"
+    },
+    "exports/database_parts/shiny_minimal.duckdb.part003": {
+      "checksum": "26e8db0959dfdcffc490d0572601e885"
+    },
+    "exports/database_parts/shiny_minimal.duckdb.part004": {
+      "checksum": "acae295d46e1355a860b87515452b7e3"
     },
     "exports/spatial_layers/shiny_spatial_layers.rds": {
       "checksum": "52013fa955b81ae8466a9f8e85be78a1"
     },
     "R/app/data_01_core.R": {
-      "checksum": "fa5cf2962ea81a3bc8a43779725f25af"
+      "checksum": "e38205e4b25b5d3235a6f190c379b2f8"
     },
     "R/app/data_02_station.R": {
       "checksum": "769eb98c937e269001b2f96b8044f8a1"
@@ -3726,7 +3738,7 @@
       "checksum": "ac9f43e1d48ed936ac75299d41177ee0"
     },
     "R/app_config.R": {
-      "checksum": "035f53d49c426e351cbde4bdf19564ba"
+      "checksum": "16c09e6feeba35c3724571c6f4d74b4b"
     },
     "R/app_data.R": {
       "checksum": "6181fbffca25ae0eb589833c9fa3ea43"

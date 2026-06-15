@@ -27,5 +27,6 @@ www/css/03_map_diagnostics.css
 www/css/04_hydrology_modules.css
 www/css/05_critical_overrides.css
 www/styles.css
-exports/shiny_minimal.duckdb
+exports/database_parts/database_parts_manifest.csv
+exports/database_parts/shiny_minimal.duckdb.part001 ... partNNN
 exports/spatial_layers/shiny_spatial_layers.rds

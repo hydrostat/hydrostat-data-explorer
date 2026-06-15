@@ -11,6 +11,9 @@ if (!file.exists(file.path(repository_dir, "app.R"))) {
   stop("Run this script from the hydrostat-data-explorer repository root.", call. = FALSE)
 }
 
+parts_dir <- file.path("exports", "database_parts")
+parts_manifest_path <- file.path(parts_dir, "database_parts_manifest.csv")
+
 required_files <- c(
   "app.R",
   "R/app_config.R",
@@ -19,7 +22,7 @@ required_files <- c(
   "R/app_server.R",
   "R/station_diagnostic_functions.R",
   "www/styles.css",
-  "exports/shiny_minimal.duckdb",
+  parts_manifest_path,
   "exports/spatial_layers/shiny_spatial_layers.rds",
   "README.md",
   "LICENSE",
@@ -34,6 +37,38 @@ missing_files <- required_files[!file.exists(required_files)]
 if (length(missing_files) > 0) {
   stop(
     paste("Missing required release files:", paste(missing_files, collapse = "\n")),
+    call. = FALSE
+  )
+}
+
+parts_manifest <- utils::read.csv(
+  parts_manifest_path,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+required_parts_columns <- c(
+  "part_order",
+  "part_file",
+  "part_size_bytes",
+  "part_sha256",
+  "database_size_bytes",
+  "database_sha256"
+)
+
+missing_parts_columns <- setdiff(required_parts_columns, names(parts_manifest))
+if (length(missing_parts_columns) > 0 || nrow(parts_manifest) == 0) {
+  stop("The database-parts manifest is invalid.", call. = FALSE)
+}
+
+parts_manifest <- parts_manifest[order(parts_manifest$part_order), , drop = FALSE]
+database_part_files <- file.path(parts_dir, parts_manifest$part_file)
+missing_database_parts <- database_part_files[!file.exists(database_part_files)]
+
+if (length(missing_database_parts) > 0) {
+  stop(
+    "Missing publication database parts: ",
+    paste(missing_database_parts, collapse = ", "),
     call. = FALSE
   )
 }
@@ -69,7 +104,7 @@ if (!all(parse_results$parsed)) {
 }
 
 runtime_packages <- c(
-  "shiny", "DBI", "duckdb", "dplyr", "tidyr", "purrr", "readr",
+  "shiny", "DBI", "duckdb", "digest", "dplyr", "tidyr", "purrr", "readr",
   "stringr", "ggplot2", "leaflet", "sf", "DT", "htmltools", "scales",
   "plotly", "httr2", "jsonlite", "lubridate", "evd", "xml2", "ragg"
 )
@@ -122,6 +157,53 @@ if (length(sensitive_matches) > 0) {
   stop("Potential embedded credential or token content was found.", call. = FALSE)
 }
 
+source(file.path("R", "app_config.R"), local = globalenv())
+source(file.path("R", "app_data.R"), local = globalenv())
+
+required_runtime_helpers <- c(
+  "connect_shiny_database",
+  "disconnect_shiny_database",
+  "app_db_tables",
+  "app_table_exists",
+  "app_table_fields",
+  "read_app_table",
+  "read_app_table_columns",
+  "read_station_table",
+  "load_station_index"
+)
+
+missing_runtime_helpers <- required_runtime_helpers[
+  !vapply(
+    required_runtime_helpers,
+    exists,
+    logical(1),
+    mode = "function",
+    inherits = TRUE
+  )
+]
+
+if (length(missing_runtime_helpers) > 0) {
+  stop(
+    "Missing runtime helper functions: ",
+    paste(missing_runtime_helpers, collapse = ", "),
+    call. = FALSE
+  )
+}
+
+validate_shiny_database_parts(
+  parts_dir = app_config$db_parts_dir,
+  manifest = parts_manifest,
+  check_hashes = TRUE
+)
+
+app_diagnostic_env$resolved_db_path <- NULL
+app_diagnostic_env$resolved_db_source <- NULL
+
+reconstructed_db <- resolve_shiny_database_path(
+  prefer_complete = FALSE,
+  force_rebuild = TRUE
+)
+
 con <- NULL
 metadata <- NULL
 station_check <- NULL
@@ -130,7 +212,7 @@ tryCatch(
   {
     con <- DBI::dbConnect(
       duckdb::duckdb(),
-      dbdir = file.path("exports", "shiny_minimal.duckdb"),
+      dbdir = reconstructed_db,
       read_only = TRUE
     )
 
@@ -185,14 +267,36 @@ tryCatch(
     if (station_check$n_rows[[1]] != station_check$n_unique[[1]]) {
       stop("Duplicate station codes were found in stations_minimal.", call. = FALSE)
     }
+
+    runtime_station_index <- load_station_index(con)
+    if (
+      nrow(runtime_station_index) != station_check$n_rows[[1]] ||
+        dplyr::n_distinct(runtime_station_index$station_code) != station_check$n_unique[[1]]
+    ) {
+      stop("The runtime station-index load did not match the database counts.", call. = FALSE)
+    }
   },
   finally = {
     if (!is.null(con)) {
-      DBI::dbDisconnect(con, shutdown = TRUE)
+      disconnect_shiny_database(con)
       con <- NULL
     }
   }
 )
+
+complete_db <- file.path("exports", "shiny_minimal.duckdb")
+complete_db_available <- file.exists(complete_db) &&
+  !is_git_lfs_pointer_file(complete_db) &&
+  isTRUE(file.info(complete_db)$size > 1024^2)
+
+if (complete_db_available) {
+  expected_hash <- unique(tolower(as.character(parts_manifest$database_sha256)))
+  complete_hash <- tolower(shiny_database_sha256(complete_db))
+
+  if (length(expected_hash) != 1 || !identical(complete_hash, expected_hash)) {
+    stop("The local complete DuckDB differs from the database-parts manifest.", call. = FALSE)
+  }
+}
 
 spatial_layers <- readRDS(
   file.path("exports", "spatial_layers", "shiny_spatial_layers.rds")
@@ -202,54 +306,35 @@ if (is.null(spatial_layers) || length(spatial_layers) == 0) {
   stop("The spatial layer RDS is empty.", call. = FALSE)
 }
 
-validation_dir <- file.path(
-  dirname(repository_dir),
-  "hydrostat-data-explorer_validation"
-)
-dir.create(validation_dir, recursive = TRUE, showWarnings = FALSE)
+manifest_present <- file.exists("manifest.json")
+if (manifest_present) {
+  deployment_manifest <- jsonlite::fromJSON("manifest.json", simplifyVector = FALSE)
+  deployment_files <- names(deployment_manifest$files)
 
-validation_report <- c(
-  paste("Validation date:", format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")),
-  paste("Repository:", repository_dir),
-  paste("R:", R.version.string),
-  paste("Platform:", R.version$platform),
-  paste("Parsed R files:", nrow(parse_results)),
-  paste("Stations:", station_check$n_rows[[1]]),
-  paste("Unique station codes:", station_check$n_unique[[1]]),
-  paste("Spatial objects:", length(spatial_layers)),
-  paste(
-    "DuckDB MiB:",
-    round(file.info(file.path("exports", "shiny_minimal.duckdb"))$size / 1024^2, 2)
-  ),
-  paste(
-    "Spatial RDS MiB:",
-    round(file.info(file.path("exports", "spatial_layers", "shiny_spatial_layers.rds"))$size / 1024^2, 2)
-  ),
-  paste("manifest.json present:", file.exists("manifest.json")),
-  "",
-  "Runtime package versions:",
-  paste(
-    runtime_packages,
-    vapply(
-      runtime_packages,
-      function(package) as.character(utils::packageVersion(package)),
-      character(1)
-    ),
-    sep = " = "
-  ),
-  "",
-  "sessionInfo():",
-  capture.output(sessionInfo())
-)
+  if ("exports/shiny_minimal.duckdb" %in% deployment_files) {
+    stop("manifest.json still includes the complete DuckDB.", call. = FALSE)
+  }
 
-validation_report_path <- file.path(
-  validation_dir,
-  paste0("release_validation_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
-)
-writeLines(validation_report, validation_report_path, useBytes = TRUE)
+  missing_manifest_parts <- setdiff(
+    gsub("\\\\", "/", database_part_files),
+    deployment_files
+  )
+
+  if (length(missing_manifest_parts) > 0) {
+    stop(
+      "manifest.json is missing database parts: ",
+      paste(missing_manifest_parts, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
 
 message("Release validation passed.")
 message("Parsed R files: ", nrow(parse_results))
+message("Database parts: ", nrow(parts_manifest))
+message("Reconstructed database bytes: ", file.info(reconstructed_db)$size)
+message("Reconstructed database SHA-256: ", shiny_database_sha256(reconstructed_db))
 message("Stations: ", station_check$n_rows[[1]])
 message("Spatial objects: ", length(spatial_layers))
-message("Validation report: ", normalizePath(validation_report_path, winslash = "/"))
+message("Local complete DuckDB available: ", complete_db_available)
+message("manifest.json present: ", manifest_present)

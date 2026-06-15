@@ -7,15 +7,265 @@
 # Database helpers
 # ------------------------------------------------------------
 
-check_shiny_database <- function(db_path) {
+is_git_lfs_pointer_file <- function(path) {
+  if (!file.exists(path)) {
+    return(FALSE)
+  }
+
+  file_size <- file.info(path)$size
+  if (is.na(file_size) || file_size > 4096) {
+    return(FALSE)
+  }
+
+  first_line <- tryCatch(
+    readLines(path, n = 1, warn = FALSE, encoding = "UTF-8"),
+    error = function(e) character()
+  )
+
+  length(first_line) == 1 &&
+    identical(first_line, "version https://git-lfs.github.com/spec/v1")
+}
+
+shiny_database_sha256 <- function(path) {
+  if (!requireNamespace("digest", quietly = TRUE)) {
+    stop(
+      "Package 'digest' is required to validate the publication database.",
+      call. = FALSE
+    )
+  }
+
+  digest::digest(
+    object = path,
+    algo = "sha256",
+    file = TRUE,
+    serialize = FALSE
+  )
+}
+
+read_shiny_database_parts_manifest <- function(parts_dir = app_config$db_parts_dir) {
+  manifest_path <- file.path(parts_dir, app_config$db_parts_manifest)
+
+  if (!file.exists(manifest_path)) {
+    stop("Missing database-parts manifest: ", manifest_path, call. = FALSE)
+  }
+
+  manifest <- utils::read.csv(
+    manifest_path,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+  required_columns <- c(
+    "part_order",
+    "part_file",
+    "part_size_bytes",
+    "part_sha256",
+    "database_size_bytes",
+    "database_sha256"
+  )
+
+  missing_columns <- setdiff(required_columns, names(manifest))
+  if (length(missing_columns) > 0) {
+    stop(
+      "Invalid database-parts manifest. Missing columns: ",
+      paste(missing_columns, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  if (nrow(manifest) == 0 || anyDuplicated(manifest$part_order)) {
+    stop("Invalid database-parts manifest rows.", call. = FALSE)
+  }
+
+  manifest <- manifest[order(manifest$part_order), , drop = FALSE]
+  rownames(manifest) <- NULL
+  manifest
+}
+
+validate_shiny_database_parts <- function(
+  parts_dir = app_config$db_parts_dir,
+  manifest = read_shiny_database_parts_manifest(parts_dir),
+  check_hashes = TRUE
+) {
+  part_paths <- file.path(parts_dir, manifest$part_file)
+  missing_parts <- manifest$part_file[!file.exists(part_paths)]
+
+  if (length(missing_parts) > 0) {
+    stop(
+      "Missing publication database parts: ",
+      paste(missing_parts, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  observed_sizes <- as.numeric(file.info(part_paths)$size)
+  expected_sizes <- as.numeric(manifest$part_size_bytes)
+
+  if (any(is.na(observed_sizes)) || any(observed_sizes != expected_sizes)) {
+    stop("One or more publication database parts have an unexpected size.", call. = FALSE)
+  }
+
+  if (isTRUE(check_hashes)) {
+    observed_hashes <- vapply(part_paths, shiny_database_sha256, character(1))
+    expected_hashes <- tolower(as.character(manifest$part_sha256))
+
+    if (any(tolower(observed_hashes) != expected_hashes)) {
+      stop("One or more publication database parts failed SHA-256 validation.", call. = FALSE)
+    }
+  }
+
+  invisible(TRUE)
+}
+
+validate_reconstructed_shiny_database <- function(
+  path,
+  manifest,
+  check_hash = TRUE
+) {
+  if (!file.exists(path)) {
+    return(FALSE)
+  }
+
+  expected_size <- unique(as.numeric(manifest$database_size_bytes))
+  expected_hash <- unique(tolower(as.character(manifest$database_sha256)))
+
+  if (length(expected_size) != 1 || length(expected_hash) != 1) {
+    stop("Database-parts manifest contains inconsistent database metadata.", call. = FALSE)
+  }
+
+  observed_size <- as.numeric(file.info(path)$size)
+  if (is.na(observed_size) || observed_size != expected_size) {
+    return(FALSE)
+  }
+
+  if (isTRUE(check_hash)) {
+    observed_hash <- tolower(shiny_database_sha256(path))
+    if (!identical(observed_hash, expected_hash)) {
+      return(FALSE)
+    }
+  }
+
+  TRUE
+}
+
+assemble_shiny_database_from_parts <- function(
+  parts_dir = app_config$db_parts_dir,
+  output_path,
+  force_rebuild = FALSE
+) {
+  manifest <- read_shiny_database_parts_manifest(parts_dir)
+  validate_shiny_database_parts(parts_dir, manifest, check_hashes = TRUE)
+
+  if (
+    !isTRUE(force_rebuild) &&
+      validate_reconstructed_shiny_database(output_path, manifest, check_hash = TRUE)
+  ) {
+    return(normalizePath(output_path, winslash = "/", mustWork = TRUE))
+  }
+
+  dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
+  building_path <- paste0(output_path, ".building")
+  unlink(building_path, force = TRUE)
+
+  output_connection <- file(building_path, open = "wb")
+  on.exit({
+    try(close(output_connection), silent = TRUE)
+    if (file.exists(building_path)) {
+      unlink(building_path, force = TRUE)
+    }
+  }, add = TRUE)
+
+  buffer_size <- 8 * 1024^2
+
+  for (part_file in manifest$part_file) {
+    part_path <- file.path(parts_dir, part_file)
+    input_connection <- file(part_path, open = "rb")
+
+    repeat {
+      buffer <- readBin(input_connection, what = "raw", n = buffer_size)
+      if (length(buffer) == 0) {
+        break
+      }
+      writeBin(buffer, output_connection)
+    }
+
+    close(input_connection)
+  }
+
+  close(output_connection)
+
+  if (!validate_reconstructed_shiny_database(building_path, manifest, check_hash = TRUE)) {
+    stop("The reconstructed publication database failed validation.", call. = FALSE)
+  }
+
+  unlink(output_path, force = TRUE)
+  if (!file.rename(building_path, output_path)) {
+    stop("Could not finalize the reconstructed publication database.", call. = FALSE)
+  }
+
+  normalizePath(output_path, winslash = "/", mustWork = TRUE)
+}
+
+resolve_shiny_database_path <- function(
+  prefer_complete = TRUE,
+  force_rebuild = FALSE
+) {
+  complete_path <- app_config$db_path
+
+  if (
+    isTRUE(prefer_complete) &&
+      file.exists(complete_path) &&
+      !is_git_lfs_pointer_file(complete_path) &&
+      isTRUE(file.info(complete_path)$size > 1024^2)
+  ) {
+    resolved_path <- normalizePath(complete_path, winslash = "/", mustWork = TRUE)
+    app_diagnostic_env$resolved_db_path <- resolved_path
+    app_diagnostic_env$resolved_db_source <- "complete"
+    return(resolved_path)
+  }
+
+  if (
+    !isTRUE(force_rebuild) &&
+      !is.null(app_diagnostic_env$resolved_db_path) &&
+      identical(app_diagnostic_env$resolved_db_source, "parts") &&
+      file.exists(app_diagnostic_env$resolved_db_path)
+  ) {
+    return(app_diagnostic_env$resolved_db_path)
+  }
+
+  runtime_dir <- file.path(tempdir(), "hydrostat-data-explorer")
+  reconstructed_path <- file.path(runtime_dir, app_config$db_reconstructed_filename)
+
+  resolved_path <- assemble_shiny_database_from_parts(
+    parts_dir = app_config$db_parts_dir,
+    output_path = reconstructed_path,
+    force_rebuild = force_rebuild
+  )
+
+  app_diagnostic_env$resolved_db_path <- resolved_path
+  app_diagnostic_env$resolved_db_source <- "parts"
+  resolved_path
+}
+
+check_shiny_database <- function(db_path = resolve_shiny_database_path()) {
   if (!file.exists(db_path)) {
     stop("Missing Shiny database: ", db_path, call. = FALSE)
   }
+
+  if (is_git_lfs_pointer_file(db_path)) {
+    stop(
+      "The publication database is a Git LFS pointer rather than a DuckDB file.",
+      call. = FALSE
+    )
+  }
+
+  invisible(db_path)
 }
 
 connect_shiny_database <- function() {
-  check_shiny_database(app_config$db_path)
-  DBI::dbConnect(duckdb::duckdb(), dbdir = app_config$db_path, read_only = TRUE)
+  db_path <- resolve_shiny_database_path()
+  check_shiny_database(db_path)
+  DBI::dbConnect(duckdb::duckdb(), dbdir = db_path, read_only = TRUE)
 }
 
 disconnect_shiny_database <- function(con) {
@@ -48,16 +298,16 @@ read_app_table_columns <- function(con, table_name, columns) {
   if (!app_table_exists(con, table_name)) {
     return(tibble::tibble())
   }
-  
+
   available <- intersect(columns, app_table_fields(con, table_name))
   if (length(available) == 0) {
     return(tibble::tibble())
   }
-  
+
   table_sql <- as.character(DBI::dbQuoteIdentifier(con, table_name))
   column_sql <- paste(as.character(DBI::dbQuoteIdentifier(con, available)), collapse = ", ")
   query <- paste0("select distinct ", column_sql, " from ", table_sql)
-  
+
   dplyr::as_tibble(DBI::dbGetQuery(con, query))
 }
 
@@ -65,15 +315,15 @@ read_station_table <- function(con, table_name, station_code) {
   if (!app_table_exists(con, table_name)) {
     return(tibble::tibble())
   }
-  
+
   station_code_sql <- as.character(DBI::dbQuoteString(con, as.character(station_code)))
   table_sql <- as.character(DBI::dbQuoteIdentifier(con, table_name))
-  
+
   query <- paste0(
     "select * from ", table_sql,
     " where cast(station_code as varchar) = ", station_code_sql
   )
-  
+
   dplyr::as_tibble(DBI::dbGetQuery(con, query))
 }
 

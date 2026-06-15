@@ -5,7 +5,8 @@
 | `app.R` | Include | Include | Shiny entry point |
 | `R/` | Include | Include | Runtime source blocks and diagnostic helpers |
 | `www/` | Include | Include | CSS and static resources |
-| `exports/shiny_minimal.duckdb` | Include with Git LFS | Include | Read-only publication database |
+| `exports/shiny_minimal.duckdb` | Local only / ignored | Exclude | Complete development database used to generate validated parts |
+| `exports/database_parts/` | Include | Include | Ordinary Git binary parts and integrity manifest used to reconstruct the read-only publication database |
 | `exports/spatial_layers/shiny_spatial_layers.rds` | Include | Include | Simplified runtime spatial object |
 | `manifest.json` | Include after generation | Required | Generated from validated R environment |
 | `pipeline/` | Include | Exclude | Public rebuild pipeline; requires local inputs |

@@ -21,3 +21,5 @@ SECURITY.md
 LICENSE
 CITATION.cff
 hydrostat-data-explorer.Rproj
+
+exports/shiny_minimal.duckdb

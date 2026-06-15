@@ -1,5 +1,6 @@
-# The publication DuckDB exceeds GitHub's normal single-file limit.
-exports/shiny_minimal.duckdb filter=lfs diff=lfs merge=lfs -text
+# Publication database parts are stored as ordinary binary Git objects.
+exports/database_parts/*.part -text
+
 # Normalize text files across Windows development and Linux deployment.
 *.R text eol=lf
 *.Rproj text eol=lf

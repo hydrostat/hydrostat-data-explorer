@@ -6,7 +6,7 @@
 
 ## Before GitHub initialization
 
-Delete the incomplete public folder and extract the latest validated Batch 1 archive again.
+Delete the incomplete public folder and extract the latest validated publication archive again.
 
 ## After Git initialization
 
@@ -16,10 +16,11 @@ Create a commit after each validated publication batch. To roll back:
 git status
 git log --oneline
 git reset --hard <validated-commit>
-git lfs pull
 ```
 
 Do not use `reset --hard` when uncommitted work must be preserved. Create a branch or copy first.
+
+The initial commit `ca47d74` used Git LFS for the complete DuckDB. Later commits use ordinary binary parts. Resetting to the initial commit may therefore require `git lfs pull`, while resetting to the fragmentation fallback does not.
 
 ## Runtime data restoration
 
@@ -27,8 +28,9 @@ Rerun:
 
 ```r
 source(file.path("tools", "01_sync_release_data.R"))
+source(file.path("tools", "04_prepare_database_parts.R"))
+source(file.path("tools", "02_generate_manifest.R"))
+source(file.path("tools", "03_validate_release.R"))
 ```
 
-The script copies fresh runtime products from the stable baseline and backs up existing public-copy data outside the repository before overwriting.
-
-After restoring data, regenerate `manifest.json` and repeat validation.
+The synchronization script copies fresh runtime products from the stable baseline and backs up existing public-copy data outside the repository before overwriting. The fragmentation script validates exact reconstruction before replacing the repository parts.

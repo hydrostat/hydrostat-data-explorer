@@ -19,6 +19,7 @@ The target host uses Linux, so a staged deployment must verify binary compatibil
 shiny
 DBI
 duckdb
+digest
 dplyr
 tidyr
 purrr
@@ -26,6 +27,7 @@ readr
 stringr
 ggplot2
 leaflet
+sf
 DT
 htmltools
 scales
@@ -45,10 +47,9 @@ ragg
 ```text
 rsconnect
 Git
-Git LFS
 ```
 
-These tools are not loaded by the running application.
+These tools are not loaded by the running application. Git LFS was used in the initial release attempt but is not used by the current deployment tree because Connect Cloud did not materialize the LFS object.
 
 ## Pipeline-only packages
 

@@ -51,10 +51,15 @@ hydrostat_publish_*/
 *.duckdb.wal
 *.duckdb.tmp
 
-# Export folder: include only the public runtime products
+# Export folder: include only the public runtime products.
+# The complete DuckDB remains local; Git stores validated binary parts.
 exports/*
 !exports/README.md
-!exports/shiny_minimal.duckdb
+!exports/database_parts/
+exports/database_parts/*
+!exports/database_parts/README.md
+!exports/database_parts/database_parts_manifest.csv
+!exports/database_parts/*.part
 !exports/spatial_layers/
 exports/spatial_layers/*
 !exports/spatial_layers/README.md
@@ -62,3 +67,5 @@ exports/spatial_layers/*
 
 # rsconnect local deployment metadata
 rsconnect/
+
+!exports/database_parts/shiny_minimal.duckdb.part*

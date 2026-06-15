@@ -5,7 +5,7 @@
 - [ ] Public repository path is separate from `ana_api_get_clean`.
 - [ ] `.Renviron`, credentials, tokens and token caches are absent.
 - [ ] `data/`, logs, raw downloads, backups and audit workspaces are absent.
-- [ ] `exports/shiny_minimal.duckdb` is tracked through Git LFS.
+- [ ] The complete local DuckDB is ignored by Git and the validated files under `exports/database_parts/` are tracked as ordinary Git objects.
 - [ ] `manifest.json` is in the same directory as `app.R`.
 - [ ] Repository URL and author metadata are correct.
 - [ ] README, license, citation, privacy, security and data notice are present.
@@ -15,7 +15,7 @@
 - [ ] All R files parse.
 - [ ] All runtime packages are installed.
 - [ ] App starts in a fresh R session.
-- [ ] DuckDB opens read-only.
+- [ ] DuckDB opens read-only locally and after forced reconstruction from database parts.
 - [ ] Station index loads without duplicate station codes.
 - [ ] Spatial RDS loads.
 - [ ] No project-relative path resolves outside the repository.
@@ -53,7 +53,7 @@
 ## Deployment behavior
 
 - [ ] HTTPS is active.
-- [ ] Git LFS database is fully available in the deployed filesystem.
+- [ ] Database parts are present in the deployed filesystem and reconstruct a valid DuckDB with the expected SHA-256.
 - [ ] Cartographic tiles and ANA endpoints are reachable.
 - [ ] Startup and selected-station query times remain acceptable.
 - [ ] Two or more independent sessions do not share session data or token state.

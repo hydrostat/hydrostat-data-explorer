@@ -16,11 +16,7 @@ The complete private/rebuild baseline remains separate:
 
 Do not nest the public repository inside the baseline.
 
-## 1. Copy the prepared repository
-
-Extract the Batch 1 archive into the `Projects` directory so that `app.R` is located at the public repository root.
-
-## 2. Copy and patch runtime data
+## 1. Synchronize approved runtime data
 
 From the public repository root, run:
 
@@ -35,33 +31,41 @@ The script copies only:
 
 It then updates publication metadata in the copied DuckDB. The baseline database is opened read-only and is not modified.
 
+## 2. Prepare Git-compatible database parts
+
+Posit Connect Cloud did not materialize the Git LFS object during GitHub publication. The deployed database is therefore represented by ordinary binary Git files smaller than 50 MiB.
+
+Run:
+
+```r
+source(file.path("tools", "04_prepare_database_parts.R"))
+```
+
+The script:
+
+- reads the complete local publication DuckDB;
+- creates 40 MiB binary parts under `exports/database_parts/`;
+- records size and SHA-256 for every part and for the complete database;
+- reconstructs the database in an external temporary workspace;
+- confirms byte size and SHA-256 identity;
+- opens the reconstructed file with DuckDB in read-only mode;
+- confirms station-code uniqueness.
+
+Do not manually edit, rename, reorder or recompress the parts.
+
+The complete `exports/shiny_minimal.duckdb` remains in the local working copy for development, but it is ignored by Git after the fallback is adopted.
+
 ## 3. Install publication-only requirements
 
 Install packages interactively, not inside runtime scripts:
 
 ```r
-install.packages(c("ragg", "rsconnect"))
+install.packages(c("digest", "ragg", "rsconnect"))
 ```
 
 All other runtime packages must also be available at the versions intended for publication.
 
-## 4. Validate the local public copy
-
-Run:
-
-```r
-source(file.path("tools", "03_validate_release.R"))
-```
-
-Then start the app in a fresh R session:
-
-```r
-shiny::runApp()
-```
-
-Complete the critical regression checklist in `RELEASE_CHECKLIST.md`.
-
-## 5. Generate `manifest.json`
+## 4. Generate `manifest.json`
 
 Run from the repository root:
 
@@ -69,40 +73,98 @@ Run from the repository root:
 source(file.path("tools", "02_generate_manifest.R"))
 ```
 
-The script defines the runtime file list explicitly. `pipeline/`, `docs/`, and `tools/` remain in the GitHub repository but are excluded from the application bundle.
+The generated manifest includes:
 
-Regenerate the manifest whenever runtime package versions or runtime source files change materially.
+- `app.R`;
+- runtime source under `R/`;
+- static resources under `www/`;
+- the database-parts manifest and binary parts;
+- `exports/spatial_layers/shiny_spatial_layers.rds`.
 
-## 6. Initialize Git and Git LFS
+It excludes:
 
-Git LFS must be installed before adding the DuckDB.
+- the complete local DuckDB;
+- `pipeline/`;
+- `docs/`;
+- `tools/`;
+- repository-only documents.
 
-```bash
-git init
-git lfs install
-git lfs track "exports/shiny_minimal.duckdb"
-git add .gitattributes
-git add .
-git commit -m "Prepare HydroStat Data Explorer public release"
-git branch -M main
-git remote add origin https://github.com/hydrostat/hydrostat-data-explorer.git
-git push -u origin main
+Regenerate the manifest whenever runtime files, database parts or package versions change.
+
+## 5. Validate the local public copy
+
+Run:
+
+```r
+source(file.path("tools", "03_validate_release.R"))
 ```
 
-Verify before pushing:
+The validator forces reconstruction from parts even when the complete local database is present. Then start the app in a fresh R session:
+
+```r
+shiny::runApp()
+```
+
+Complete the critical regression checklist in `RELEASE_CHECKLIST.md`.
+
+## 6. Replace the Git LFS version in the current branch
+
+The initial release commit stored the DuckDB through Git LFS. Keep that historical commit unchanged, but remove the complete database from the current Git tree:
+
+```bash
+git rm --cached exports/shiny_minimal.duckdb
+git add .gitattributes .gitignore .rscignore
+git add R/app_config.R R/app/data_01_core.R
+git add tools/02_generate_manifest.R tools/03_validate_release.R tools/04_prepare_database_parts.R
+git add exports/database_parts manifest.json README.md START_HERE.md docs exports/README.md tools/README.md
+git status --short
+```
+
+The complete local database should remain on disk but should no longer appear as tracked or untracked because `.gitignore` excludes it.
+
+Confirm that no current file uses LFS:
 
 ```bash
 git lfs ls-files
-git status
+git check-attr filter -- exports/database_parts/*.part
 ```
 
-The DuckDB must appear in `git lfs ls-files`. If it does not, do not push.
+`git lfs ls-files` may still display historical information depending on Git LFS version, but the staged database parts must show `filter: unspecified` and must not be LFS pointers.
 
-## 7. Staged Posit Connect Cloud deployment
+## 7. Commit and push
 
-Publish a test deployment first. Confirm that:
+After reviewing the staged changes:
 
-- the Git LFS object is materialized rather than left as a pointer file;
+```bash
+git commit -m "Use validated database parts for cloud deployment"
+git push origin main
+```
+
+## 8. Republish on Posit Connect Cloud
+
+Republish the existing content from:
+
+```text
+Repository: hydrostat/hydrostat-data-explorer
+Branch: main
+Primary file: app.R
+```
+
+At process startup, the app:
+
+1. uses the complete DuckDB directly when it is available locally;
+2. otherwise verifies the repository parts;
+3. reconstructs the exact DuckDB under `tempdir()`;
+4. validates size and SHA-256;
+5. opens the reconstructed file read-only;
+6. reuses that file for later sessions in the same R process.
+
+## 9. Staged deployment checks
+
+Confirm that:
+
+- the application starts without a DuckDB format error;
+- startup time remains acceptable after reconstruction;
 - DuckDB opens read-only;
 - the serialized spatial layer loads;
 - external map tiles load;
@@ -117,7 +179,7 @@ Do not announce the public release until the full checklist passes.
 The private baseline remains unchanged. To roll back the public copy:
 
 1. stop the staged deployment;
-2. reset the Git branch to the last validated commit;
-3. recopy the runtime database and spatial RDS from the baseline when required;
-4. regenerate `manifest.json`;
+2. reset the Git branch to commit `ca47d74` or another validated commit;
+3. retain or restore the complete local DuckDB from the baseline;
+4. regenerate the appropriate `manifest.json` for the selected commit;
 5. redeploy and repeat regression tests.
