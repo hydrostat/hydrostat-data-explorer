@@ -1,0 +1,22 @@
+
+      /* Critical layout styles are kept inline to avoid browser-cache issues during local testing. */
+      body .station-info-list { display: grid; gap: 7px; margin: 4px 0 12px 0; }
+      body .station-info-row { display: grid; grid-template-columns: minmax(112px, 44%) minmax(0, 1fr); gap: 8px; align-items: start; padding: 7px 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; }
+      body .station-info-label { color: #475569; font-size: 10.5px; font-weight: 800; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.03em; }
+      body .station-info-value { color: #0f172a; font-size: 12.5px; font-weight: 400; line-height: 1.25; overflow-wrap: anywhere; }
+      body .availability-list { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 4px 0 12px 0; }
+      body .availability-row { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: center; padding: 7px 9px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; }
+      body .availability-icon { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 22px; border-radius: 999px; color: #fff; font-size: 13px; font-weight: 900; line-height: 1; }
+      body .availability-row.available { background: #f0fdf4; border-color: #bbf7d0; }
+      body .availability-row.available .availability-icon { background: #15803d; }
+      body .availability-row.unavailable { background: #f8fafc; border-color: #dbe4ee; }
+      body .availability-row.unavailable .availability-icon { background: #94a3b8; }
+      body .availability-label { color: #0f172a; font-size: 12px; font-weight: 800; }
+      body .details-card-main > summary, body .details-card > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 12px; color: #17324d; font-size: 13px; font-weight: 800; background: #f1f7fb; border: 1px solid #dbeafe; border-radius: 10px; list-style: none; }
+      body .details-card-main > summary::-webkit-details-marker, body .details-card > summary::-webkit-details-marker { display: none; }
+      body .details-card-main > summary::before, body .details-card > summary::before { content: "▾"; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #1f77b4; color: #fff; font-size: 12px; }
+      body .details-card-main:not([open]) > summary::before, body .details-card:not([open]) > summary::before { content: "▸"; }
+      body .details-card-main > summary::after { content: "clique para abrir/fechar"; margin-left: auto; color: #64748b; font-size: 11px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+      body .details-card[open] > summary { background: #e8f3fb; }
+      @media (max-width: 1200px) { body .station-info-row { grid-template-columns: 1fr; gap: 2px; } }
+    

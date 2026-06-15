@@ -1,0 +1,16 @@
+path,status,reason
+app.R,modified,Updated public entry-point description.
+R/app_config.R,modified,Added explicit ragg and sf runtime dependencies; confirmed repository URL.
+R/app/server_07_station_outputs.R,modified,Changed planned-repository text to a public repository link.
+pipeline/R/030_build_station_database.R,modified,Replaced obsolete open decision with implemented session-only download model.
+pipeline/R/060_export_shiny_minimal.R,modified,Added current API/privacy publication metadata.
+pipeline/README_pipeline.md,replaced,"Added public rebuild scope, boundaries, sequence, and limitations."
+README.md,replaced,Created public application README.
+LICENSE,new,MIT license for original code.
+CITATION.cff,new,Citation metadata for Wilson Fernandes and ORCID.
+.gitignore,replaced,"Excluded credentials, local data, audits, logs, backups, and non-runtime exports."
+.gitattributes,new,Configured Git LFS for the publication DuckDB and normalized text line endings.
+.rscignore,new,Excluded repository-only content from deployment discovery.
+tools/,new,"Added data synchronization, metadata patch, manifest generation, and validation tools."
+docs/,restructured,Included only sanitized public documentation; internal project/chat records excluded.
+.github/,new,Added repository metadata guidance and a safe bug-report template.

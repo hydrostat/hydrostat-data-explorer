@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem without sensitive information.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include CPF/CNPJ, passwords, tokens, authorization headers, `.Renviron` contents, or private data files.
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal sequence of actions.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: station
+    attributes:
+      label: Public ANA station code, when relevant
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, R version, browser, and deployment URL when relevant.
+  - type: dropdown
+    id: data_source
+    attributes:
+      label: Data source involved
+      options:
+        - Bundled station products
+        - User upload
+        - ANA authenticated download
+        - Legacy public ANA download
+        - Map or spatial layer
+        - Not sure
+    validations:
+      required: true
+  - type: checkboxes
+    id: sensitive
+    attributes:
+      label: Sensitive-data confirmation
+      options:
+        - label: I removed credentials, tokens, authorization headers, private paths, and confidential data.
+          required: true

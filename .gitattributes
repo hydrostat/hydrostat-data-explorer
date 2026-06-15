@@ -1,0 +1,15 @@
+# The publication DuckDB exceeds GitHub's normal single-file limit.
+exports/shiny_minimal.duckdb filter=lfs diff=lfs merge=lfs -text
+# Normalize text files across Windows development and Linux deployment.
+*.R text eol=lf
+*.Rproj text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.cff text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.rscignore text eol=lf

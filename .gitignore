@@ -1,0 +1,64 @@
+# Local R and RStudio state
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.Renviron
+.Rprofile
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Credentials, token caches, and local configuration
+config/
+**/*token*.rds
+**/*token*.json
+**/*credential*
+**/*secret*
+
+# Logs and transient outputs
+logs/
+outputs/
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# Local analytical and processed data
+data/
+_archive/
+_diagnostics_pipeline_static/
+
+# Local audit/refactoring artifacts
+00_clean_copy_report.txt
+01_pipeline_script_copy_report.csv
+01_pipeline_script_copy_summary.txt
+publication_*.csv
+publication_*.txt
+hydrostat_publish_*/
+
+# Archives and bundles
+*.zip
+*.7z
+*.tar
+*.tar.gz
+
+# DuckDB temporary files
+*.duckdb.wal
+*.duckdb.tmp
+
+# Export folder: include only the public runtime products
+exports/*
+!exports/README.md
+!exports/shiny_minimal.duckdb
+!exports/spatial_layers/
+exports/spatial_layers/*
+!exports/spatial_layers/README.md
+!exports/spatial_layers/shiny_spatial_layers.rds
+
+# rsconnect local deployment metadata
+rsconnect/

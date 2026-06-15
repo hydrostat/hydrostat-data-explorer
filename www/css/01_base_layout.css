@@ -1,0 +1,325 @@
+/* ============================================================
+   styles.css
+   Purpose: Visual layout for the first integrated Shiny app
+   ============================================================ */
+
+body {
+  background: #f3f6f9;
+  color: #1f2933;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.app-shell {
+  max-width: 1760px;
+  margin: 0 auto;
+  padding: 18px 22px 28px 22px;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  background: #e8eef4;
+  border-radius: 14px;
+  color: #0f172a;
+  border: 1px solid #d7e0ea;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+}
+
+.title-block h1 {
+  margin: 0 0 4px 0;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.title-block p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.badge-blue {
+  background: rgba(219, 234, 254, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(219, 234, 254, 0.40);
+}
+
+.badge-green {
+  background: rgba(220, 252, 231, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(220, 252, 231, 0.40);
+}
+
+.badge-gray {
+  background: rgba(241, 245, 249, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(241, 245, 249, 0.34);
+}
+
+.side-panel {
+  position: sticky;
+  top: 14px;
+}
+
+.notice-card,
+.control-card,
+.station-card,
+.main-panel-card,
+.section-card,
+.plot-card {
+  background: #ffffff;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.notice-card {
+  padding: 13px 14px;
+  border-left: 5px solid #1f77b4;
+  margin-bottom: 12px;
+}
+
+.notice-card p {
+  margin: 6px 0 0 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.38;
+}
+
+.control-card {
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.station-card {
+  padding: 15px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+}
+
+.main-panel-card {
+  padding: 16px 18px 20px 18px;
+  min-height: calc(100vh - 155px);
+}
+
+.section-card {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.map-card {
+  padding-bottom: 10px;
+}
+
+.section-header {
+  margin-bottom: 12px;
+}
+
+.section-header h3,
+.section-card h3 {
+  margin: 0 0 5px 0;
+  color: #17324d;
+  font-size: 21px;
+  font-weight: 650;
+}
+
+.section-header p,
+.section-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.plot-card {
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.selected-station-title {
+  margin-bottom: 12px;
+}
+
+.selected-station-title .eyebrow {
+  display: block;
+  color: #1f77b4;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.selected-station-title h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.selected-station-title p {
+  margin: 5px 0 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0 14px 0;
+}
+
+.kpi-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  min-height: 64px;
+}
+
+.kpi-label {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-value {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.station-card h4 {
+  margin: 16px 0 8px 0;
+  color: #17324d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.station-info-table {
+  width: 100%;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.station-info-table th {
+  width: 48%;
+  vertical-align: top;
+  padding: 5px 4px 5px 0;
+  color: #475569;
+  font-weight: 650;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.station-info-table td {
+  vertical-align: top;
+  padding: 5px 0 5px 4px;
+  color: #0f172a;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.nav-tabs {
+  border-bottom: 1px solid #dbe4ee;
+  margin-bottom: 0;
+}
+
+.nav-tabs > li > a {
+  font-weight: 650;
+  color: #245a8d;
+  border-radius: 10px 10px 0 0;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:focus,
+.nav-tabs > li.active > a:hover {
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #dbe4ee;
+  border-bottom-color: transparent;
+}
+
+.leaflet-container {
+  background: #eef2f7;
+  border-radius: 12px;
+  border: 1px solid #dbe4ee;
+}
+
+.dataTables_wrapper {
+  font-size: 12px;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select,
+.form-control,
+.selectize-input {
+  border-radius: 8px;
+  border-color: #cbd5e1;
+}
+
+.btn-primary {
+  border-radius: 10px;
+  font-weight: 650;
+  border-color: #1f77b4;
+  background-color: #1f77b4;
+}
+
+.limitation-box {
+  background: #fff7ed;
+  border-left: 5px solid #f97316;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 14px 0;
+  color: #7c2d12;
+}
+
+hr {
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 992px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-badges {
+    justify-content: flex-start;
+  }
+
+  .side-panel {
+    position: static;
+    margin-bottom: 16px;
+  }
+
+  .station-card {
+    max-height: none;
+  }
+}
+

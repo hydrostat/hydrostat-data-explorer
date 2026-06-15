@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use HydroStat Data Explorer, please cite the software using the metadata below."
+title: "HydroStat Data Explorer"
+type: software
+authors:
+  - family-names: "Fernandes"
+    given-names: "Wilson"
+    orcid: "https://orcid.org/0000-0002-9731-2320"
+repository-code: "https://github.com/hydrostat/hydrostat-data-explorer"
+url: "https://github.com/hydrostat/hydrostat-data-explorer"
+license: MIT
+keywords:
+  - hydrology
+  - water resources
+  - Shiny
+  - R
+  - ANA
+  - HidroWebService
+  - DuckDB
+abstract: >-
+  HydroStat Data Explorer is an R/Shiny application for visualization,
+  screening, and analysis of hydrological data associated with stations of
+  Brazil's National Water and Basic Sanitation Agency (ANA). It combines a
+  compact bundled database with session-only user-provided or user-initiated
+  hydrological time-series workflows.
