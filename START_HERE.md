@@ -1,57 +1,141 @@
-# Start here — Publication Batch 1
+# Comece aqui
 
-This archive is the prepared source for the permanent public repository.
+O **HydroStat Data Explorer** pode ser utilizado de duas maneiras:
 
-## 1. Extract
+1. diretamente pela aplicação pública;
+2. localmente, a partir deste repositório.
 
-Extract the folder as a sibling of the stable baseline:
+## Usar a aplicação online
 
-```text
-<projects-directory>/
-├── ana_api_get_clean/
-└── hydrostat-data-explorer/
+Abra:
+
+**[HydroStat Data Explorer](https://019eca91-f20c-8c76-338c-88342a355318.share.connect.posit.cloud/)**
+
+Nenhuma instalação é necessária.
+
+## Executar localmente
+
+### 1. Obtenha o repositório
+
+Com Git:
+
+```bash
+git clone https://github.com/hydrostat/hydrostat-data-explorer.git
+cd hydrostat-data-explorer
 ```
 
-Rename the extracted folder to `hydrostat-data-explorer` when necessary.
+Alternativamente, use **Code → Download ZIP** no GitHub e extraia todo o conteúdo.
 
-## 2. Open the public project
+Git LFS não é necessário.
 
-Open:
+### 2. Instale R e os pacotes
 
-```text
-hydrostat-data-explorer/hydrostat-data-explorer.Rproj
-```
+Recomenda-se R 4.6.0. RStudio é opcional.
 
-Set the working directory to the repository root.
-
-## 3. Install the two missing publication packages
-
-Run interactively:
+Execute no R:
 
 ```r
-install.packages(c("ragg", "rsconnect"))
+runtime_packages <- c(
+  "shiny",
+  "DBI",
+  "duckdb",
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "readr",
+  "stringr",
+  "ggplot2",
+  "leaflet",
+  "sf",
+  "DT",
+  "htmltools",
+  "scales",
+  "ragg",
+  "digest",
+  "tibble",
+  "httr2",
+  "jsonlite",
+  "xml2",
+  "plotly",
+  "evd"
+)
+
+packages_to_install <- setdiff(
+  runtime_packages,
+  rownames(installed.packages())
+)
+
+if (length(packages_to_install) > 0) {
+  install.packages(packages_to_install)
+}
 ```
 
-Do not place installation commands inside application scripts.
+### 3. Inicie a aplicação
 
-## 4. Copy approved runtime data and validate
+Abra `hydrostat-data-explorer.Rproj` ou defina o diretório de trabalho como a raiz do repositório.
+
+Execute:
 
 ```r
-source(file.path("tools", "01_sync_release_data.R"))
-source(file.path("tools", "03_validate_release.R"))
 shiny::runApp()
 ```
 
-The synchronization script reads from the sibling `ana_api_get_clean` folder by default. Set `HYDROSTAT_BASELINE_DIR` only when the baseline is elsewhere.
+### 4. Aguarde a preparação do banco
 
-## 5. Generate the deployment manifest
+O DuckDB completo não está armazenado como um único arquivo no Git.
 
-After the app passes local regression:
+Na inicialização, a aplicação valida as quatro partes presentes em `exports/database_parts/`, reconstrói o banco em uma pasta temporária, confirma seu SHA-256 e o abre somente para leitura.
 
-```r
-source(file.path("tools", "02_generate_manifest.R"))
+A primeira inicialização de uma nova sessão R pode demorar um pouco mais.
+
+## Arquivos necessários
+
+Não remova:
+
+```text
+app.R
+R/
+www/
+exports/database_parts/
+exports/spatial_layers/shiny_spatial_layers.rds
 ```
 
-Then follow `docs/DEPLOYMENT.md` for Git LFS, GitHub and staged Posit Connect Cloud deployment.
+Em `exports/database_parts/` devem existir:
 
-Do not push to GitHub before confirming that `exports/shiny_minimal.duckdb` appears in `git lfs ls-files`.
+```text
+database_parts_manifest.csv
+shiny_minimal.duckdb.part001
+shiny_minimal.duckdb.part002
+shiny_minimal.duckdb.part003
+shiny_minimal.duckdb.part004
+```
+
+## Credenciais da ANA
+
+Credenciais não são necessárias para consultar os produtos incorporados ao aplicativo.
+
+Elas são solicitadas apenas quando o usuário escolhe um download autenticado da API ANA. Nesse caso, credenciais, token e dados baixados permanecem somente na sessão ativa e não são persistidos pela aplicação.
+
+## Problemas comuns
+
+### `there is no package called ...`
+
+Instale o pacote indicado ou execute novamente o bloco de instalação.
+
+### Erro relacionado às partes do banco
+
+Confirme que o download do repositório foi concluído e que os quatro arquivos `.part` estão presentes.
+
+### Mapa-base ausente
+
+Verifique a conexão com a internet. Os tiles cartográficos são fornecidos por serviço externo.
+
+### Falha em downloads da ANA
+
+Verifique a conexão, o token e a mensagem apresentada na interface. A API ANA é uma dependência externa.
+
+## Mais informações
+
+Consulte o [`README.md`](README.md) para a descrição completa do projeto, dados, privacidade, limitações, citação e licença.
+
+As instruções de manutenção e implantação ficam separadas em [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).

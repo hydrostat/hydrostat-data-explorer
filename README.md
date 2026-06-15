@@ -2,61 +2,164 @@
 
 **Sistema de análise de dados hidrológicos**
 
+[![R 4.6.0](https://img.shields.io/badge/R-4.6.0-276DC3?logo=r&logoColor=white)](https://www.r-project.org/)
+[![Shiny](https://img.shields.io/badge/Shiny-app-0099F9)](https://shiny.posit.co/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-public-success)](https://019eca91-f20c-8c76-338c-88342a355318.share.connect.posit.cloud/)
+
+> **[Abrir a aplicação online](https://019eca91-f20c-8c76-338c-88342a355318.share.connect.posit.cloud/)**
+> Também é possível baixar este repositório e executar a aplicação localmente.
+
 HydroStat Data Explorer é uma aplicação pública desenvolvida em R/Shiny para visualizar, consultar, fazer triagem e analisar dados hidrológicos associados a estações da Agência Nacional de Águas e Saneamento Básico (ANA).
 
-A aplicação combina uma base local compacta para mapas e produtos por estação com séries diárias fornecidas ou obtidas pelo próprio usuário durante a sessão.
+A aplicação combina produtos compactos incorporados ao repositório — utilizados no mapa e nos módulos por estação — com séries diárias fornecidas ou obtidas pelo próprio usuário durante a sessão.
 
-## Estado do projeto
+## Principais recursos
 
-Este repositório contém o candidato à primeira publicação pública do aplicativo.
-
-O aplicativo inclui:
-
-- mapa e busca de estações;
+- mapa, filtros e busca de estações;
 - cadastro e disponibilidade de produtos por estação;
 - medições de descarga;
 - curvas-chave e diagnósticos de triagem;
 - seções transversais;
-- aquisição e análise de séries fluviométricas em sessão;
-- aquisição e análise de séries pluviométricas em sessão;
+- upload e análise de séries fluviométricas;
+- upload e análise de séries pluviométricas;
 - estatísticas mensais e anuais;
 - máximas anuais, mínimas anuais e análise POT descritiva;
-- downloads autenticados da API ANA iniciados pelo usuário.
+- downloads autenticados da API ANA iniciados pelo usuário;
+- exportação de tabelas e resultados em CSV.
 
-## Aplicação local
+## Formas de uso
 
-### Requisitos
+### 1. Aplicação online
 
-- R 4.6.0 para reproduzir o ambiente de publicação atual;
-- pacotes registrados em `manifest.json` para a implantação;
-- Git LFS para obter `exports/shiny_minimal.duckdb` a partir do repositório;
-- acesso à internet para tiles cartográficos e para fluxos de download solicitados pelo usuário.
+A versão pública está disponível em:
 
-### Arquivos obrigatórios de execução
+**[Abrir HydroStat Data Explorer](https://019eca91-f20c-8c76-338c-88342a355318.share.connect.posit.cloud/)**
 
-```text
-app.R
-R/
-www/
-exports/shiny_minimal.duckdb
-exports/spatial_layers/shiny_spatial_layers.rds
+Não é necessário instalar R para utilizar a versão online.
+
+### 2. Execução local
+
+A aplicação também pode ser executada diretamente a partir deste repositório.
+
+#### Requisitos
+
+- R 4.6.0 recomendado para reproduzir o ambiente atual;
+- RStudio é opcional;
+- acesso à internet para instalar pacotes, carregar tiles cartográficos e utilizar serviços externos da ANA;
+- espaço temporário disponível para reconstruir o banco de publicação, com aproximadamente 149 MB.
+
+**Git LFS não é necessário.** Os quatro arquivos que compõem o banco de publicação estão armazenados como arquivos Git normais no repositório.
+
+#### Obter o projeto
+
+Com Git:
+
+```bash
+git clone https://github.com/hydrostat/hydrostat-data-explorer.git
+cd hydrostat-data-explorer
 ```
 
-### Execução
+Também é possível usar **Code → Download ZIP** na página do GitHub e extrair todo o conteúdo do arquivo.
 
-Abra o projeto no RStudio, instale previamente os pacotes necessários e execute:
+#### Instalar os pacotes de execução
+
+Execute uma vez no R:
+
+```r
+runtime_packages <- c(
+  "shiny",
+  "DBI",
+  "duckdb",
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "readr",
+  "stringr",
+  "ggplot2",
+  "leaflet",
+  "sf",
+  "DT",
+  "htmltools",
+  "scales",
+  "ragg",
+  "digest",
+  "tibble",
+  "httr2",
+  "jsonlite",
+  "xml2",
+  "plotly",
+  "evd"
+)
+
+packages_to_install <- setdiff(
+  runtime_packages,
+  rownames(installed.packages())
+)
+
+if (length(packages_to_install) > 0) {
+  install.packages(packages_to_install)
+}
+```
+
+Os scripts da aplicação não instalam pacotes automaticamente.
+
+#### Iniciar a aplicação
+
+Abra `hydrostat-data-explorer.Rproj` no RStudio ou defina o diretório de trabalho como a raiz do repositório. Em seguida, execute:
 
 ```r
 shiny::runApp()
 ```
 
-Os scripts do aplicativo não instalam pacotes automaticamente.
+O navegador deverá abrir a aplicação local. O endereço normalmente será semelhante a:
 
-## Dados incorporados e dados em sessão
+```text
+http://127.0.0.1:xxxx
+```
 
-A base `exports/shiny_minimal.duckdb` contém produtos derivados e compactos usados pelo mapa e pelos módulos por estação. Ela não contém as séries diárias completas de vazão, cota ou precipitação usadas nas análises em sessão.
+## Reconstrução automática do banco
 
-Séries enviadas pelo usuário ou baixadas durante o uso são mantidas somente na sessão ativa. O aplicativo não as grava no DuckDB, no repositório ou em cache persistente.
+O arquivo completo `exports/shiny_minimal.duckdb` não é incluído no Git.
+
+O repositório contém:
+
+```text
+exports/database_parts/database_parts_manifest.csv
+exports/database_parts/shiny_minimal.duckdb.part001
+exports/database_parts/shiny_minimal.duckdb.part002
+exports/database_parts/shiny_minimal.duckdb.part003
+exports/database_parts/shiny_minimal.duckdb.part004
+```
+
+Durante a inicialização, a aplicação:
+
+1. verifica a presença e o tamanho das quatro partes;
+2. valida o SHA-256 de cada parte;
+3. reconstrói o DuckDB em uma pasta temporária;
+4. valida o tamanho e o SHA-256 do banco reconstruído;
+5. abre o banco somente para leitura.
+
+Propriedades validadas do banco atual:
+
+```text
+Tamanho: 149172224 bytes
+SHA-256: fb3b9a0a2dd30f6d6f14a67548a3b3c51a6ad438d4f9bf4c86fcd2200fbc7756
+Estações: 37584
+```
+
+A primeira inicialização de uma nova sessão R pode levar mais tempo por causa da validação e reconstrução do banco.
+
+## Dados incorporados e dados da sessão
+
+O banco de publicação contém produtos derivados e compactos usados pelo mapa e pelos módulos por estação. Ele não contém as séries diárias completas de vazão, cota ou precipitação utilizadas nas análises de séries temporais.
+
+As séries enviadas pelo usuário ou baixadas durante o uso:
+
+- permanecem somente na sessão ativa;
+- não são gravadas no DuckDB;
+- não são adicionadas ao repositório;
+- não são armazenadas em cache persistente pela aplicação.
 
 Consulte:
 
@@ -66,17 +169,41 @@ Consulte:
 
 ## Credenciais e token da ANA
 
-O aplicativo nunca usa credenciais do autor do projeto.
+Não são necessárias credenciais para explorar os produtos já incorporados à aplicação.
 
-Quando o usuário escolhe o download autenticado:
+Quando o usuário escolhe o download autenticado da API ANA:
 
-1. identificador e senha são usados somente para solicitar um token à ANA;
-2. os campos são limpos após a autenticação;
+1. o identificador e a senha são usados somente para solicitar um token;
+2. os campos de credenciais são limpos após a autenticação;
 3. o token permanece somente na memória da sessão;
-4. token, credenciais, respostas parciais e séries baixadas não são persistidos pelo aplicativo;
+4. credenciais, token, respostas parciais e séries baixadas não são persistidos;
 5. o download pode ser retomado na mesma sessão após a renovação do token.
 
 Não abra issues contendo CPF/CNPJ, senhas, tokens, cabeçalhos de autorização ou arquivos privados.
+
+## Solução de problemas na execução local
+
+### Pacote não encontrado
+
+Execute novamente o bloco de instalação de pacotes e reinicie a sessão R.
+
+### Partes do banco ausentes ou inválidas
+
+Confirme a presença dos quatro arquivos `.part` e de `database_parts_manifest.csv` em:
+
+```text
+exports/database_parts/
+```
+
+Em caso de download incompleto, faça novamente o clone ou baixe um novo ZIP do repositório.
+
+### O mapa-base não aparece
+
+Os produtos e as camadas espaciais locais podem continuar disponíveis, mas os tiles do mapa-base dependem de conexão com a internet e do serviço externo utilizado.
+
+### O download da ANA falha
+
+A API ANA é uma dependência externa. Verifique a conexão, a validade do token e as mensagens apresentadas pela aplicação.
 
 ## Fonte e atribuição
 
@@ -95,11 +222,12 @@ hydrostat-data-explorer/
 ├── app.R
 ├── R/                         Código de execução do Shiny
 ├── www/                       CSS e recursos estáticos
-├── exports/                   Base e camada espacial de publicação
+├── exports/                   Dados e camadas espaciais de publicação
 ├── pipeline/                  Pipeline público de reconstrução
-├── docs/                      Documentação técnica e decisões
+├── docs/                      Documentação técnica e operacional
 ├── tools/                     Ferramentas de publicação e validação
-├── manifest.json              Dependências do Posit Connect Cloud
+├── manifest.json              Dependências da implantação
+├── START_HERE.md              Guia rápido de uso
 ├── CITATION.cff
 ├── LICENSE
 ├── DATA_NOTICE.md
@@ -108,27 +236,35 @@ hydrostat-data-explorer/
 └── CONTRIBUTING.md
 ```
 
-A pasta `pipeline/` é pública para transparência e reprodutibilidade, mas não integra o bundle de execução do aplicativo.
+A pasta `pipeline/` é disponibilizada para transparência e reprodutibilidade, mas não integra o bundle de execução da aplicação.
 
-## Reconstrução dos produtos
+## Reconstrução dos produtos de publicação
 
-O pipeline completo depende de dados locais não incluídos no repositório, credenciais próprias da ANA e pacotes adicionais. Consulte [`pipeline/README_pipeline.md`](pipeline/README_pipeline.md).
+O pipeline completo depende de dados locais não incluídos no repositório, credenciais próprias da ANA e pacotes adicionais.
+
+Consulte [`pipeline/README_pipeline.md`](pipeline/README_pipeline.md).
 
 Não execute scripts de aquisição sem revisar os parâmetros, os caminhos locais e as regras de acesso da ANA.
 
-## Implantação
+## Implantação e manutenção
 
-O alvo inicial é o Posit Connect Cloud. O arquivo `manifest.json` deve permanecer no mesmo diretório de `app.R`.
+A implantação pública atual utiliza Posit Connect Cloud.
 
-Instruções de preparação, geração do manifesto e validação estão em [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+As instruções destinadas à manutenção e à implantação estão em:
+
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+Essas rotinas não são necessárias para executar a aplicação localmente.
 
 ## Como citar
 
-Use os metadados em [`CITATION.cff`](CITATION.cff). O GitHub também apresentará a opção “Cite this repository”.
+Use os metadados disponíveis em [`CITATION.cff`](CITATION.cff). O GitHub também apresenta a opção **Cite this repository**.
 
 ## Contribuições e problemas
 
-Consulte [`CONTRIBUTING.md`](CONTRIBUTING.md). Relatos devem conter passos reproduzíveis e nunca dados sensíveis.
+Consulte [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Relatos devem conter passos reproduzíveis e nunca dados sensíveis.
 
 ## Licença
 
